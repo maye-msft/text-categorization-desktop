@@ -1,5 +1,5 @@
 {
-  "name": "text-analysis-desktop",
+  "name": "text-categorization-desktop",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -20,8 +20,6 @@
     "express": "^4.17.0",
     "file-saver": "^2.0.2",
     "jquery": "^3.4.1",
-    "material-design-icons": "^3.0.1",
-    "material-design-icons-iconfont": "^5.0.1",
     "node-nlp": "^3.1.1",
     "vue": "^2.6.10",
     "vue-chartjs": "^3.4.2",
@@ -40,6 +38,25 @@
     "assets": [
       "static/**/*",
       "node_modules/**/*",
+      "node_modules/vue/dist/vue.min.js",
+      "node_modules/vuetify/dist/vuetify.min.js",
+      "node_modules/chart.js/dist/Chart.bundle.min.js",
+      "node_modules/vue-chartjs/dist/vue-chartjs.min.js",
+      "node_modules/vue-chartkick/dist/vue-chartkick.min.js",
+
+      "node_modules/vuex/dist/vuex.min.js",
+      "node_modules/vue-router/dist/vue-router.min.js",
+
+      "node_modules/file-saver/dist/FileSaver.min.js",
+      "node_modules/jquery/dist/jquery.min.js",
+      "node_modules/node-nlp/dist/bundle.js",
+
+      "node_modules/vue-d3-network/dist/vue-d3-network.umd.min.js",
+      "node_modules/echarts/dist/echarts.min.js",
+      "node_modules/echarts-wordcloud/dist/echarts-wordcloud.min.js",
+      "node_modules/vue-resize-directive/dist/Vueresize.js",
+      "node_modules/csv-js/csv.js",
+
       "server.js"
     ],
     "targets": [
