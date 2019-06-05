@@ -12,21 +12,34 @@ let win
 function createWindow() {
     
 
-        startWebServer()
+        // startWebServer()
 
     // const startWebApp = require('./server');
 
     // startWebApp()
 
 
-        win = new BrowserWindow({ width: 800, height: 600 })
+    var exec = require('child_process').exec;
+    exec('pwd', function callback(error, stdout, stderr){
+        console.log(stdout)
+        exec('node startserver.js', function callback(error, stdout, stderr){
+            console.log(error)
+            console.log(stdout)
+            console.log(stderr)
 
-        win.loadURL('http://localhost:3000/public/index.html')
-    
-        win.on('closed', () => {
-            win = null
+            win = new BrowserWindow({ width: 800, height: 600 })
+
+            win.loadURL('http://localhost:3000/public/index.html')
+        
+            win.on('closed', () => {
+                win = null
+            })
         })
-    
+    });
+
+
+        
+}
 
 
 
@@ -43,6 +56,15 @@ app.on('activate', () => {
         createWindow()
     }
 })
+
+// // Quit when all windows are closed.
+// app.on('window-all-closed', function() {
+//     // On OS X it is common for applications and their menu bar
+//     // to stay active until the user quits explicitly with Cmd + Q
+//     if (process.platform != 'darwin') {
+//       app.quit();
+//     }
+//   });
 
 function startWebServer() {
     const startWebApp = require('./server');
@@ -67,3 +89,4 @@ function startWebServer() {
         console.log(`Worker ${process.pid} started`);
     }
 }
+

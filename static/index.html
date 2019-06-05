@@ -2,9 +2,12 @@
 <html>
 
 <head>
-    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.min.css" rel="stylesheet">
+    <!-- <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet"> -->
+    <!-- <link href="/node_modules/material-design-icons-iconfont/dist/material-design-icons.css" rel="stylesheet"> -->
+    <link href="/node_modules/material-design-icons/iconfont/material-icons.css?family=Roboto:100,300,400,500,700,900|Material+Icons" rel="stylesheet">
+    <link href="/node_modules/vuetify/dist/vuetify.min.css" rel="stylesheet">
     <link href="/node_modules/vue-d3-network/dist/vue-d3-network.css" rel="stylesheet">
+    <link href="/node_modules/chart.js/dist/Chart.min.css" rel="stylesheet">
     <meta name="viewport" content="">
 </head>
 
@@ -913,14 +916,13 @@
     </script>
 
 
-    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vuetify/dist/vuetify.js"></script>
-    <script src="/node_modules/vuewordcloud/VueWordCloud.js"></script>
-    <script src="https://unpkg.com/chart.js@2.8.0/dist/Chart.bundle.js"></script>
-    <script src="https://unpkg.com/vue-chartkick@0.5.1"></script>
+    <script src="/node_modules/vue/dist/vue.min.js"></script>
+    <script src="/node_modules/vuetify/dist/vuetify.min.js"></script>
+    <script src="/node_modules/chart.js/dist/Chart.bundle.min.js"></script>
+    <script src="/node_modules/vue-chartjs/dist/vue-chartjs.min.js"></script>
+    <script src="/node_modules/vue-chartkick/dist/vue-chartkick.min.js"></script>
 
     <script src="/node_modules/vuex/dist/vuex.min.js"></script>
-    <script src="/node_modules/axios/dist/axios.min.js"></script>
     <script src="/node_modules/vue-router/dist/vue-router.min.js"></script>
 
     <script src="/node_modules/file-saver/dist/FileSaver.min.js"></script>
@@ -934,8 +936,53 @@
 
     <!-- <script src="/node_modules/comma-separated-values/csv.min.js"></script> -->
     <script src="/node_modules/csv-js/csv.js"></script>
-    
+
     <script src="/public/js/main.js"></script>
+
+    <script id="nlpworker" type="javascript/worker">
+        
+
+
+        importScripts("http://localhost:3000/node_modules/node-nlp/dist/bundle.js")
+
+        var nlpmanager = null
+        
+        debugger
+ 
+        
+        self.onmessage = function(e) {
+            if(nlpmanager == null) {
+                console.log(nlp)
+                console.log(NerManager)
+                nlpmanager = new NerManager({ threshold: 0.8 })
+                e.data.modelEntities.forEach(function (ent) {
+                    var keywords = ent.keywords.split("\n");
+                    for (var i = 0; i < keywords.length; i++) {
+                        keywords[i] = keywords[i].trim();
+                    }
+                    nlpmanager.addNamedEntityText(
+                        ent.name,
+                        ent.name,
+                        ['en'],
+                        keywords
+                    );
+                })
+            }
+            var text = e.data.text
+            var textidx = e.data.textidx
+            window.nlpmanagers[bulkid].findEntities(
+                        text,
+                        'en',
+                ).then(entities => {
+                    self.postMessage({
+                        entities:entities,
+                        textidx:textidx
+                    });
+                })
+        };
+
+    </script>
+
 
 </body>
 

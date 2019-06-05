@@ -566,7 +566,7 @@ Vue.component("analysis-view", {
         ...Vuex.mapMutations([
             'setCSVData', 'setCSVEntities', 'setCSVCategories', 'setFilename'
         ]),
-        
+
         opencsvfile() {
             var that = this;
             openFile(function (fname, size, lastModifiedDate, contents) {
@@ -645,6 +645,65 @@ Vue.component("analysis-view", {
 
                 return chunks
             }
+        },
+        extractEntityByWorker(strArray) {
+            var that = this
+            var textcount = 0
+            var entitiesData = new Array(this.csvdata.rows.length)
+            var bulksize = 8
+
+           
+            for (var j = 0; j < bulksize; j++) {
+                // nlpmanagers[j] = new NLPJS.NerManager({ threshold: 0.8 })
+
+                // that.entities.forEach(function (ent) {
+                //     var keywords = ent.keywords.split("\n");
+                //     for (var i = 0; i < keywords.length; i++) {
+                //         keywords[i] = keywords[i].trim();
+                //     }
+                //     nlpmanagers[j].addNamedEntityText(
+                //         ent.name,
+                //         ent.name,
+                //         ['en'],
+                //         keywords
+                //     );
+                // })
+
+                var blob = new Blob([
+                    document.querySelector('#nlpworker').textContent
+                ], 
+                { type: "text/javascript" }
+                )
+                var worker = new Worker(window.URL.createObjectURL(blob), { type: "module" });
+   
+                worker.onmessage = function (e) {
+                    var entities = e.data.entities;
+                    var textidx = e.data.textidx;
+                    var bulkid = e.data.bulkid;
+                    var idx = strArray[textidx].rowid;
+
+                    entitiesData[idx] = entitiesData[idx] || []
+                    entitiesData[idx] = entitiesData[idx].concat(entities)
+                    that.extractProgress = ((textcount + 1) / strArray.length) * 100
+                    textcount = textcount + 1
+                    if (textcount == strArray.length) {
+                        that.extractProgress = 100
+                        that.setCSVEntities(entitiesData)
+                        that.showEntityColumn = true;
+                        that.categorize()
+                        that.running = false
+                    } else if(textidx+bulksize<strArray.length) {
+                        worker.postMessage({ text: strArray[textidx+bulksize].text, textidx:textidx+bulksize });
+                    }
+                }
+                worker.postMessage({ modelEntities: that.entities, text: strArray[j].text, textidx:j });
+
+            }
+
+            
+
+
+
         },
         extractEntity(strArray) {
             var that = this
@@ -916,7 +975,7 @@ Vue.component("dashboard-view", {
     data: function () {
         return {
             nodes: [
-                { id: 1, name: 'my awesome node 1',_color: 'orange'  },
+                { id: 1, name: 'my awesome node 1', _color: 'orange' },
                 { id: 2, name: 'my node 2' },
                 // { id: 3, name: 'orange node', _color: 'orange' },
                 // { id: 4, _color: '#4466ff' },
@@ -1071,7 +1130,7 @@ Vue.component("dashboard-view", {
         //     return array
         // },
 
-        
+
         chartdata() {
             var that = this
             var array = [];
@@ -1091,11 +1150,19 @@ Vue.component("dashboard-view", {
         },
         words() {
             var words = {}
+            var that = this
+            var entNames = []
+            that.entities.forEach(function (ent) {
+                entNames.push(ent.name)
+            })
+
             this.csvEntities.forEach(function (ent) {
                 if (ent) {
                     ent.forEach(function (item) {
-                        words[item.sourceText] = words[item.sourceText] || 0
-                        words[item.sourceText] = words[item.sourceText] + 1
+                        if (entNames.indexOf(item.entity) != -1) {
+                            words[item.sourceText] = words[item.sourceText] || 0
+                            words[item.sourceText] = words[item.sourceText] + 1
+                        }
                     });
                 }
 
@@ -1122,7 +1189,7 @@ Vue.component("dashboard-view", {
 
                     if (ent) {
                         ent.forEach(function (item) {
-                            if (nodesArray.indexOf(item.entity) == -1 && entNames.indexOf(item.entity)!=-1) {
+                            if (nodesArray.indexOf(item.entity) == -1 && entNames.indexOf(item.entity) != -1) {
                                 nodesArray.push(item.entity)
                                 nodes.push({ id: nodes.length + 1, name: item.entity })
                             }
@@ -1132,6 +1199,8 @@ Vue.component("dashboard-view", {
 
                 })
             }
+            console.log(nodes);
+
             return nodes;
         },
         entlinks() {
@@ -1141,29 +1210,33 @@ Vue.component("dashboard-view", {
             var nodesArray = []
             var that = this
             var entNames = []
-                that.entities.forEach(function (ent) {
-                    entNames.push(ent.name)
-                })
+            that.entities.forEach(function (ent) {
+                entNames.push(ent.name)
+            })
             for (var i = 0; i < this.csvEntities.length; i++) {
                 if (this.csvEntities[i]) {
                     for (var j = 0; j < this.csvEntities[i].length; j++) {
                         var item = this.csvEntities[i][j]
-                        if (nodesArray.indexOf(item.entity) == -1  && entNames.indexOf(item.entity)!=-1) {
+                        if (nodesArray.indexOf(item.entity) == -1 && entNames.indexOf(item.entity) != -1) {
                             nodesArray.push(item.entity)
                             nodes[item.entity] = nodesArray.length
                         }
 
                         for (var k = j + 1; k < this.csvEntities[i].length; k++) {
-                            var sid = this.csvEntities[i][j].entity
-                            var tid = this.csvEntities[i][k].entity
-                            var key1 = sid + "\n" + tid
-                            var key2 = tid + "\n" + sid
-                            if (links[key1] && links[key1] > 0) {
-                                links[key1]++
-                            } else if (links[key2] && links[key2] > 0) {
-                                links[key2]++
-                            } else {
-                                links[key1] = 1
+                            if (entNames.indexOf(this.csvEntities[i][j].entity) != -1 &&
+                                entNames.indexOf(this.csvEntities[i][k].entity) != -1
+                            ) {
+                                var sid = this.csvEntities[i][j].entity
+                                var tid = this.csvEntities[i][k].entity
+                                var key1 = sid + "\n" + tid
+                                var key2 = tid + "\n" + sid
+                                if (links[key1] && links[key1] > 0) {
+                                    links[key1]++
+                                } else if (links[key2] && links[key2] > 0) {
+                                    links[key2]++
+                                } else {
+                                    links[key1] = 1
+                                }
                             }
                         }
                     }
@@ -1173,6 +1246,7 @@ Vue.component("dashboard-view", {
                 var ids = key.split("\n")
                 linksArray.push({ sid: nodes[ids[0]], tid: nodes[ids[1]], _svgAttrs: { 'stroke-width': 1/*links[key]*/, opacity: 1 } })
             })
+            console.log(linksArray);
 
             return linksArray;
         },
